@@ -39,6 +39,7 @@
 
 	RegisterSignal(parent, COMSIG_PARENT_ATTACKBY, PROC_REF(OnAttackBy))
 	RegisterSignal(parent, COMSIG_PARENT_EXAMINE, PROC_REF(OnExamine))
+	RegisterSignal(parent, COMSIG_CLICK_CTRL, PROC_REF(OnCtrlClick))
 
 	var/list/possible_mats = list()
 	for(var/mat_type in subtypesof(/datum/material))
@@ -61,18 +62,28 @@
 			if(amt)
 				examine_list += "<span class='notice'>It has [amt] units of [lowertext(M.name)] stored.</span>"
 
+/datum/component/material_container/proc/OnCtrlClick(datum/source, mob/user)
+	var/obj/item/I
+	if(user.hand)
+		I = user.l_hand
+	else
+		I = user.r_hand
+
+	user_insert(I, user)
+
 /datum/component/material_container/proc/OnAttackBy(datum/source, obj/item/I, mob/living/user)
-	var/list/tc = allowed_typecache
 	if(disable_attackby)
 		return
 	if(user.a_intent != INTENT_HELP)
 		return
 	if(I.flags & ABSTRACT)
 		return
-	if((I.flags_2 & (HOLOGRAM_2 | NO_MAT_REDEMPTION_2)) || (tc && !is_type_in_typecache(I, tc)))
-		to_chat(user, "<span class='warning'>[parent] won't accept [I]!</span>")
-		return
 	. = COMPONENT_NO_AFTERATTACK
+
+	user_insert(I, user)
+
+/datum/component/material_container/proc/user_insert(obj/item/I, mob/living/user)
+	var/list/tc = allowed_typecache
 	var/datum/callback/pc = precondition
 	if(pc && !pc.Invoke(user))
 		return
@@ -83,9 +94,11 @@
 	if(!has_space(material_amount))
 		to_chat(user, "<span class='warning'>[parent] is full. Please remove metal or glass from [parent] in order to insert more.</span>")
 		return
-	user_insert(I, user)
+	if((I.flags_2 & (HOLOGRAM_2 | NO_MAT_REDEMPTION_2)) || (tc && !is_type_in_typecache(I, tc)))
+		to_chat(user, "<span class='warning'>[parent] won't accept [I]!</span>")
+		return
 
-/datum/component/material_container/proc/user_insert(obj/item/I, mob/living/user)
+
 	set waitfor = FALSE
 	var/requested_amount
 	if(istype(I, /obj/item/stack) && precise_insertion)

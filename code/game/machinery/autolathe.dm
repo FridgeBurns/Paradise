@@ -506,3 +506,7 @@
 /obj/machinery/autolathe/syndicate/Initialize()
 	. = ..()
 	files = new /datum/research/autolathe/syndicate(src)
+
+// /obj/machinery/autolathe/CtrlClick(mob/user)
+// 	. = ..()
+// 	// try emitting a signal the the autolathe was ctrl clicked
